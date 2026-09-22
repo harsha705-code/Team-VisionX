@@ -1,0 +1,627 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>VisionX - Virtual Medical Laboratory &amp; Genomic WebXR Explorer</title>
+  <meta name="description" content="VisionX is a futuristic virtual medical laboratory exploring the human body from whole anatomy to microscopic organs, cells, and molecular DNA with CRISPR gene editing in WebXR.">
+  <meta name="keywords" content="VisionX, WebXR, Virtual Reality, Medical Visualization, DNA, CRISPR, Human Anatomy, Three.js, Gene Therapy">
+  
+  <!-- Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  
+  <link rel="stylesheet" href="css/styles.css">
+
+  <!-- Three.js Import Map -->
+  <script type="importmap">
+  {
+    "imports": {
+      "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
+      "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
+    }
+  }
+  </script>
+</head>
+<body class="theme-dark">
+  <!-- Professional Futuristic Loading Screen -->
+  <div id="loading-screen" class="loading-overlay">
+    <div class="loading-content">
+      <div class="loading-dna-spinner">
+        <div class="dna-spinner-circle"></div>
+        <div class="dna-spinner-core">🧬</div>
+      </div>
+      <div class="loading-brand">
+        <h1 class="load-title">VISION<span class="highlight-text">X</span></h1>
+        <p class="load-subtitle">FUTURISTIC VIRTUAL MEDICAL LABORATORY</p>
+      </div>
+      <div class="loading-bar-track">
+        <div class="loading-bar-progress" id="loading-progress-bar"></div>
+      </div>
+      <p class="loading-status-text" id="loading-status-text">Loading 3D anatomical structures...</p>
+      <div class="loading-features-hint">
+        <span>⚡ WebXR 6DoF Ready</span> &bull;
+        <span>🔬 Multi-Scale Biological Journey</span> &bull;
+        <span>✂️ CRISPR-Cas9 Simulation</span>
+      </div>
+    </div>
+  </div>
+
+  <div id="canvas-container">
+    <canvas id="webgl-canvas"></canvas>
+  </div>
+
+  <!-- Header / Top Bar -->
+  <header class="top-nav">
+    <div class="nav-brand">
+      <div class="brand-icon">
+        <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M4 4c4 4 4 12 8 16m0-16c-4 4-4 12-8 16M20 4c-4 4-4 12-8 16m0-16c4 4 4 12 8 16" stroke-linecap="round"/>
+          <line x1="6" y1="8" x2="18" y2="8" stroke="currentColor"/>
+          <line x1="8" y1="12" x2="16" y2="12" stroke="currentColor"/>
+          <line x1="6" y1="16" x2="18" y2="16" stroke="currentColor"/>
+        </svg>
+      </div>
+      <div>
+        <h1 class="brand-title">VISION<span class="highlight-text">X</span></h1>
+        <p class="brand-subtitle">Virtual Medical Laboratory &amp; Genomic Explorer</p>
+      </div>
+    </div>
+
+    <!-- Active Scale Indicator Display -->
+    <div class="scale-indicator-badge" id="scale-indicator-badge">
+      <span class="indicator-dot pulse"></span>
+      <span class="indicator-label" id="current-scale-label">SCALE: WHOLE BODY (1x)</span>
+    </div>
+
+    <!-- Multi-Scale Biological View Switcher -->
+    <nav class="scale-navigator" aria-label="Biological Scale Navigation">
+      <button class="scale-btn active" data-scale="body" id="btn-scale-body" title="Whole Human Body Hologram (1x)">
+        <span class="scale-step">0</span>
+        <span class="scale-label">Human Body</span>
+      </button>
+      <button class="scale-btn" data-scale="organ_diagram" id="btn-scale-diagram" title="Inside Organ Functional View (10x)">
+        <span class="scale-step">1</span>
+        <span class="scale-label">Organ View</span>
+      </button>
+      <button class="scale-btn" data-scale="cell" id="btn-scale-cell" title="Microscopic Cell Nucleus (10,000x)">
+        <span class="scale-step">2</span>
+        <span class="scale-label">Cell / Tissue</span>
+      </button>
+      <button class="scale-btn" data-scale="karyotype" id="btn-scale-karyotype" title="23 Chromosome Karyotype (100,000x)">
+        <span class="scale-step">3</span>
+        <span class="scale-label">Chromosomes</span>
+      </button>
+      <button class="scale-btn" data-scale="dna" id="btn-scale-dna" title="Molecular B-DNA Double Helix (100,000,000x)">
+        <span class="scale-step">4</span>
+        <span class="scale-label">DNA Helix</span>
+      </button>
+      <button class="scale-btn" data-scale="phenotype" id="btn-scale-phenotype" title="Cellular Impact & Phenotype Recovery">
+        <span class="scale-step">5</span>
+        <span class="scale-label">Cell Impact</span>
+      </button>
+    </nav>
+
+    <!-- Top Action Controls -->
+    <div class="nav-actions">
+      <div id="vr-button-slot"></div>
+      <button class="icon-btn" id="btn-tour-toggle" title="Start 9-Step Guided Medical Tour (T)" aria-label="Guided Tour">
+        <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2">
+          <circle cx="12" cy="12" r="10"></circle>
+          <polygon points="10 8 16 12 10 16 10 8" fill="currentColor"></polygon>
+        </svg>
+      </button>
+      <button class="icon-btn" id="btn-audio-toggle" title="Turn Sound On/Off (M)" aria-label="Toggle Audio">
+        <svg id="icon-sound-on" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2">
+          <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon>
+          <path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"></path>
+        </svg>
+        <svg id="icon-sound-off" class="hidden" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2">
+          <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon>
+          <line x1="23" y1="9" x2="17" y2="15"></line>
+          <line x1="17" y1="9" x2="23" y2="15"></line>
+        </svg>
+      </button>
+      <button class="icon-btn" id="btn-fullscreen-toggle" title="Toggle Fullscreen Mode (F)" aria-label="Toggle Fullscreen">
+        <svg id="icon-fs-enter" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"></path>
+        </svg>
+        <svg id="icon-fs-exit" class="hidden" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M8 3v3a2 2 0 0 1-2 2H3m18 0h-3a2 2 0 0 1-2-2V3m0 18v-3a2 2 0 0 1 2-2h3M3 16h3a2 2 0 0 1 2 2v3"></path>
+        </svg>
+      </button>
+      <button class="icon-btn" id="btn-reset-cam" title="Reset Camera View (R)" aria-label="Reset View">
+        <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"></path>
+          <path d="M3 3v5h5"></path>
+        </svg>
+      </button>
+      <button class="icon-btn" id="btn-help-toggle" title="Help &amp; Medical Guide (?)" aria-label="Open Guide">
+        <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2">
+          <circle cx="12" cy="12" r="10"></circle>
+          <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"></path>
+          <line x1="12" y1="17" x2="12.01" y2="17"></line>
+        </svg>
+      </button>
+    </div>
+  </header>
+
+  <!-- Left Sidebar: 8-Organ Scanner & Genetic Disorders -->
+  <aside class="sidebar-disorders glass-panel" id="disorders-sidebar">
+    <div class="panel-header">
+      <div class="panel-title-wrap">
+        <span class="badge-pulse"></span>
+        <h2>ORGAN SCANNER &amp; PATHOLOGY</h2>
+      </div>
+      <span class="panel-tag">Interactive</span>
+    </div>
+
+    <!-- Quick 8-Organ Scanner Selector -->
+    <div class="organ-scanner-box">
+      <span class="box-label">Select Major Organ to Inspect &amp; Scan:</span>
+      <div class="organ-chips-grid">
+        <button class="organ-chip active" data-organ="heart" data-disorder="sickle_cell" title="Heart & Blood Circulation">
+          <span>❤️ Heart</span>
+        </button>
+        <button class="organ-chip" data-organ="brain" data-disorder="huntington" title="Brain & Central Nervous System">
+          <span>🧠 Brain</span>
+        </button>
+        <button class="organ-chip" data-organ="lungs" data-disorder="cystic_fibrosis" title="Lungs & Respiratory System">
+          <span>🫁 Lungs</span>
+        </button>
+        <button class="organ-chip" data-organ="liver" data-disorder="sickle_cell" title="Liver Metabolic System">
+          <span>🟤 Liver</span>
+        </button>
+        <button class="organ-chip" data-organ="kidneys" data-disorder="cystic_fibrosis" title="Kidneys & Renal Filtration">
+          <span>🫘 Kidneys</span>
+        </button>
+        <button class="organ-chip" data-organ="stomach" data-disorder="cystic_fibrosis" title="Stomach & Digestive System">
+          <span>🥣 Stomach</span>
+        </button>
+        <button class="organ-chip" data-organ="intestines" data-disorder="cystic_fibrosis" title="Intestines & Nutrient Absorption">
+          <span>〰️ Intestines</span>
+        </button>
+        <button class="organ-chip" data-organ="pancreas" data-disorder="cystic_fibrosis" title="Pancreas Endocrine Hub">
+          <span>🥖 Pancreas</span>
+        </button>
+        <button class="organ-chip genome-chip" data-organ="genome" data-disorder="down_syndrome" title="Cellular Chromosomes & Genome Core">
+          <span>🧬 Genome</span>
+        </button>
+      </div>
+    </div>
+
+    <div class="disorder-list" role="radiogroup" aria-label="Select Genetic Disorder">
+      <!-- Sickle Cell Anemia -->
+      <button class="disorder-card active" data-disorder="sickle_cell" id="disorder-sickle-cell">
+        <div class="disorder-status-dot mutant-red"></div>
+        <div class="disorder-card-body">
+          <div class="disorder-card-header">
+            <h3>Sickle Cell Anemia</h3>
+            <span class="disorder-locus">Heart &amp; Blood (HBB)</span>
+          </div>
+          <p class="disorder-summary">A 1-letter DNA typo (A &rarr; T) turns round donut blood cells into stiff crescent bananas that clog blood vessels.</p>
+          <div class="card-footer-row">
+            <div class="mutation-chip">1-Letter Mistake</div>
+            <span class="card-cure-btn" data-cure-disorder="sickle_cell" title="Play 3D Cure Animation for Sickle Cell">▶ Play Cure</span>
+          </div>
+        </div>
+      </button>
+
+      <!-- Cystic Fibrosis -->
+      <button class="disorder-card" data-disorder="cystic_fibrosis" id="disorder-cystic-fibrosis">
+        <div class="disorder-status-dot mutant-amber"></div>
+        <div class="disorder-card-body">
+          <div class="disorder-card-header">
+            <h3>Cystic Fibrosis (ΔF508)</h3>
+            <span class="disorder-locus">Lungs &amp; Air (CFTR)</span>
+          </div>
+          <p class="disorder-summary">3 missing DNA letters break salt doorway channels in lung cells, trapping thick sticky mucus that impedes respiration.</p>
+          <div class="card-footer-row">
+            <div class="mutation-chip">3 Letters Erased</div>
+            <span class="card-cure-btn" data-cure-disorder="cystic_fibrosis" title="Play 3D Cure Animation for Cystic Fibrosis">▶ Play Cure</span>
+          </div>
+        </div>
+      </button>
+
+      <!-- Huntington's Disease -->
+      <button class="disorder-card" data-disorder="huntington" id="disorder-huntington">
+        <div class="disorder-status-dot mutant-purple"></div>
+        <div class="disorder-card-body">
+          <div class="disorder-card-header">
+            <h3>Huntington's Disease</h3>
+            <span class="disorder-locus">Brain &amp; Nerves (HTT)</span>
+          </div>
+          <p class="disorder-summary">The DNA repeats "CAG" over 40 times. This genetic stutter forms toxic protein aggregates that damage cerebral neurons.</p>
+          <div class="card-footer-row">
+            <div class="mutation-chip">CAG Stutter</div>
+            <span class="card-cure-btn" data-cure-disorder="huntington" title="Play 3D Cure Animation for Huntington's">▶ Play Cure</span>
+          </div>
+        </div>
+      </button>
+
+      <!-- Down Syndrome -->
+      <button class="disorder-card" data-disorder="down_syndrome" id="disorder-down-syndrome">
+        <div class="disorder-status-dot mutant-blue"></div>
+        <div class="disorder-card-body">
+          <div class="disorder-card-header">
+            <h3>Down Syndrome (Trisomy 21)</h3>
+            <span class="disorder-locus">Chromosome 21 (3 Copies)</span>
+          </div>
+          <p class="disorder-summary">Cells inherit 3 copies of Chromosome 21 instead of 2, creating an overexpression of gene dosages across development.</p>
+          <div class="card-footer-row">
+            <div class="mutation-chip">Extra Copy</div>
+            <span class="card-cure-btn" data-cure-disorder="down_syndrome" title="Play 3D Cure Animation for Down Syndrome">▶ Play Cure</span>
+          </div>
+        </div>
+      </button>
+
+      <!-- Wild Type (Healthy) -->
+      <button class="disorder-card" data-disorder="wildtype" id="disorder-wildtype">
+        <div class="disorder-status-dot wildtype"></div>
+        <div class="disorder-card-body">
+          <div class="disorder-card-header">
+            <h3>Healthy Human Genome</h3>
+            <span class="disorder-locus">Standard 23 Pairs</span>
+          </div>
+          <p class="disorder-summary">Perfect human DNA sequence without pathogenic mutations. Erythrocytes are flexible round discs and organs run smoothly.</p>
+        </div>
+      </button>
+    </div>
+
+    <!-- Custom Mutation Sandbox Button -->
+    <div class="sandbox-trigger-box">
+      <button class="btn-primary" id="btn-open-sandbox">
+        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>
+        </svg>
+        <span>Open Mutation Sandbox (Experiment)</span>
+      </button>
+    </div>
+  </aside>
+
+  <!-- Right Sidebar: 9-Step Guided Medical Tour & CRISPR Precision Medicine -->
+  <aside class="sidebar-inspector glass-panel" id="inspector-sidebar">
+    <div class="panel-header">
+      <div class="panel-title-wrap">
+        <span class="cure-icon-badge">✨</span>
+        <h2 id="tour-panel-heading">GUIDED MEDICAL TOUR</h2>
+      </div>
+      <span class="panel-tag cure-tag" id="story-step-badge">STEP 1 / 9</span>
+    </div>
+
+    <!-- 9-Step Guided Tour Progress Track -->
+    <div class="tour-progress-bar-wrap">
+      <div class="tour-step-track">
+        <div class="story-step-dot active" data-step="1" title="1. Human Body">1</div>
+        <div class="tour-step-line"></div>
+        <div class="story-step-dot" data-step="2" title="2. Major Organs">2</div>
+        <div class="tour-step-line"></div>
+        <div class="story-step-dot" data-step="3" title="3. Cardiovascular System">3</div>
+        <div class="tour-step-line"></div>
+        <div class="story-step-dot" data-step="4" title="4. Disease Detection">4</div>
+        <div class="tour-step-line"></div>
+        <div class="story-step-dot" data-step="5" title="5. Cell / Tissue Scale">5</div>
+        <div class="tour-step-line"></div>
+        <div class="story-step-dot" data-step="6" title="6. DNA Double Helix">6</div>
+        <div class="tour-step-line"></div>
+        <div class="story-step-dot" data-step="7" title="7. Genetic Typo">7</div>
+        <div class="tour-step-line"></div>
+        <div class="story-step-dot" data-step="8" title="8. CRISPR-Cas9 Cure">8</div>
+        <div class="tour-step-line"></div>
+        <div class="story-step-dot" data-step="9" title="9. Healthy Recovery">9</div>
+      </div>
+    </div>
+
+    <!-- Active Step Story Card -->
+    <div class="story-content-card" id="story-content-card">
+      <h3 id="story-title">Step 1: Whole Human Body Hologram</h3>
+      <span class="story-subtitle" id="story-subtitle">Macroscopic Human Anatomy Scanner (1x Scale)</span>
+      <p id="story-description">We begin at the complete holographic human body, equipped with an automated medical laser diagnostic scanner.</p>
+      
+      <div class="story-highlight-box" id="story-highlight-box">
+        <strong>What you see:</strong> High-resolution contoured human body with pulsing vascular tree and glowing major organs!
+      </div>
+    </div>
+
+    <!-- Tour Step Navigation Buttons -->
+    <div class="story-nav-buttons">
+      <button class="btn-story-nav" id="btn-story-prev" disabled>◀ Back</button>
+      <button class="btn-story-nav next" id="btn-story-next">Next Step ▶</button>
+    </div>
+    
+    <div class="tour-action-row">
+      <button class="btn-story-autoplay" id="btn-story-autoplay">
+        <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor">
+          <polygon points="5 3 19 12 5 21 5 3"></polygon>
+        </svg>
+        <span>Play Full 9-Step Guided Tour</span>
+      </button>
+      <button class="btn-tour-skip" id="btn-tour-skip" title="Skip to Free Exploration">Skip Tour</button>
+    </div>
+
+    <!-- Active Cure & CRISPR Mechanism Card -->
+    <div class="cure-card" id="cure-card">
+      <div class="cure-hero">
+        <h4 id="cure-therapy-name">CRISPR-Cas9 Gene Editing (Casgevy)</h4>
+        <span class="cure-therapy-type" id="cure-therapy-type">Molecular Scissors (Find &amp; Replace Tool for DNA)</span>
+      </div>
+
+      <div class="cure-mechanism-box">
+        <span class="c-label">How the Precision Intervention Works:</span>
+        <p id="cure-mechanism-text">Think of CRISPR like the "Find and Replace" tool in a computer word processor! A scout molecule spots the misspelled letter T, microscopic protein scissors (Cas9) snip it out, and a healthy repair patch rewrites it back to letter A. The red blood cells turn back into soft, round donuts that flow freely!</p>
+      </div>
+
+      <!-- Action Button: Administer CRISPR Cure -->
+      <div class="cure-action-box">
+        <button class="btn-administer-cure" id="btn-administer-cure">
+          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"></path>
+          </svg>
+          <span id="cure-btn-text">ADMINISTER CRISPR-CAS9 CURE</span>
+        </button>
+      </div>
+      <p class="educational-disclaimer-note">* Educational simulation demonstrating molecular gene editing mechanisms.</p>
+    </div>
+
+    <!-- Active Disease Status & Fixed Pathology Description -->
+    <div class="pathology-box" id="pathology-box">
+      <div class="pathology-header">
+        <h4 id="pathology-title">Condition: Sickle Cell Anemia</h4>
+        <span class="status-pill status-disease" id="pathology-status">Disease Detected</span>
+      </div>
+      <p class="pathology-desc" id="pathology-desc">Normally, red blood cells are soft, round donuts that carry oxygen smoothly through your body. In Sickle Cell, a 1-letter typo causes cells to twist into rigid crescents that clog vessels.</p>
+      <button class="btn-secondary" id="btn-view-phenotype-3d">
+        <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/>
+        </svg>
+        <span>Compare Blood Cells (Donut vs Crescent)</span>
+      </button>
+    </div>
+  </aside>
+
+  <!-- Bottom Interactive Ribbon & Controls -->
+  <footer class="bottom-dock glass-panel">
+    <!-- Playback & Rotation -->
+    <div class="dock-section dock-playback">
+      <button class="icon-btn-circle" id="btn-pause-rotation" title="Play / Pause Rotation (Space)">
+        <svg id="icon-pause" viewBox="0 0 24 24" width="18" height="18" fill="currentColor">
+          <rect x="6" y="4" width="4" height="16"></rect>
+          <rect x="14" y="4" width="4" height="16"></rect>
+        </svg>
+        <svg id="icon-play" class="hidden" viewBox="0 0 24 24" width="18" height="18" fill="currentColor">
+          <polygon points="5 3 19 12 5 21 5 3"></polygon>
+        </svg>
+      </button>
+      <div class="slider-control">
+        <label for="slider-rotation-speed">Rotation Speed</label>
+        <input type="range" id="slider-rotation-speed" min="0" max="3" step="0.1" value="1">
+      </div>
+    </div>
+
+    <!-- Real-time Codon Reading Frame Strip -->
+    <div class="dock-section dock-codon-strip">
+      <div class="codon-strip-header">
+        <span class="strip-label">DNA 3-Letter Words (Codons) &amp; Amino Acid Building Blocks:</span>
+        <span class="ribosome-pos" id="ribosome-marker">Word 7 of 12</span>
+      </div>
+      <div class="codon-track" id="codon-track"></div>
+    </div>
+
+    <!-- Quick Mode Actions -->
+    <div class="dock-section dock-modes">
+      <button class="mode-btn" id="btn-unwind-dna" title="Unzip the two DNA strands">
+        <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M4 12h16M4 6h16M4 18h16"/>
+        </svg>
+        <span>Unzip DNA Strands</span>
+      </button>
+      <button class="mode-btn" id="btn-transcription" title="Read DNA like a recipe book">
+        <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2">
+          <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline>
+        </svg>
+        <span>Transcribe (RNA)</span>
+      </button>
+    </div>
+  </footer>
+
+  <!-- Desktop Controls Floating Help Bar -->
+  <div class="desktop-controls-hud" id="desktop-controls-hud">
+    <span class="hud-kbd-pill"><kbd>B</kbd> Body</span>
+    <span class="hud-kbd-pill"><kbd>O</kbd> Organ</span>
+    <span class="hud-kbd-pill"><kbd>C</kbd> Cell</span>
+    <span class="hud-kbd-pill"><kbd>D</kbd> DNA</span>
+    <span class="hud-kbd-pill"><kbd>Space</kbd> Pause</span>
+    <span class="hud-kbd-pill"><kbd>R</kbd> Reset</span>
+    <span class="hud-kbd-pill"><kbd>ESC</kbd> Close</span>
+  </div>
+
+  <!-- 3D Red Blood Cell Comparison Modal -->
+  <div class="phenotype-modal hidden" id="phenotype-modal">
+    <div class="phenotype-modal-content glass-panel">
+      <div class="modal-header">
+        <div class="modal-title-wrap">
+          <span class="badge-pulse"></span>
+          <h3 id="phenotype-modal-title">Healthy Round Donut Cell vs. Stiff Crescent Banana Cell</h3>
+        </div>
+        <button class="close-btn" id="btn-close-phenotype">&times;</button>
+      </div>
+      <div class="phenotype-grid">
+        <div class="phenotype-card">
+          <div class="phenotype-badge healthy">Healthy Blood Cell</div>
+          <div class="phenotype-preview">
+            <div class="rbc-3d-graphic normal-disc">
+              <div class="rbc-dimple"></div>
+            </div>
+          </div>
+          <h4>Soft Round Donut Cell (Biconcave)</h4>
+          <p>Full of smooth hemoglobin liquid. It is so flexible it squeezes through microscopic capillaries without getting stuck.</p>
+          <ul class="feature-bullets">
+            <li>Lives a full 120 days in circulation</li>
+            <li>Glides smoothly through capillary beds</li>
+            <li>Delivers rich oxygen to brain and vital organs</li>
+          </ul>
+        </div>
+
+        <div class="phenotype-card mutant">
+          <div class="phenotype-badge disease" id="phenotype-mutant-badge">Sickle Cell (Damaged)</div>
+          <div class="phenotype-preview">
+            <div class="rbc-3d-graphic sickle-crescent">
+              <div class="sickle-spike"></div>
+            </div>
+          </div>
+          <h4 id="phenotype-mutant-title">Stiff Crescent Banana Cell</h4>
+          <p id="phenotype-mutant-desc">Because of that 1-letter DNA typo, hemoglobin molecules polymerize into rigid rods that bend the erythrocyte into a sharp crescent.</p>
+          <ul class="feature-bullets" id="phenotype-mutant-bullets">
+            <li>Prematurely lyses in 10-20 days (severe anemia)</li>
+            <li>Gets jammed in capillaries, causing vaso-occlusive pain crises</li>
+            <li>Deprives distal organs of arterial oxygenation</li>
+          </ul>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <span class="footer-note">✨ What happens after CRISPR cure? The bone marrow permanently stops producing sickled crescents! Newly differentiated erythrocytes emerge as smooth, flexible discs for life.</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Custom Mutation Sandbox Modal -->
+  <div class="sandbox-modal hidden" id="sandbox-modal">
+    <div class="sandbox-modal-content glass-panel">
+      <div class="modal-header">
+        <div class="modal-title-wrap">
+          <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>
+          </svg>
+          <h3>Genetic Mutation Sandbox (Try Mutating DNA!)</h3>
+        </div>
+        <button class="close-btn" id="btn-close-sandbox">&times;</button>
+      </div>
+      <p class="sandbox-subtitle">See what happens when you introduce typos into the body's DNA recipe book. Try the quick buttons below:</p>
+      
+      <div class="sandbox-presets">
+        <span class="preset-label">Try a Scenario:</span>
+        <button class="preset-btn" data-preset="missense">1-Letter Swap (Sickle Cell)</button>
+        <button class="preset-btn" data-preset="nonsense">Stop Early (Nonsense)</button>
+        <button class="preset-btn" data-preset="frameshift">Insert 1 Letter (Frameshift)</button>
+        <button class="preset-btn" data-preset="deletion">Erase 3 Letters (Cystic Fibrosis)</button>
+        <button class="preset-btn reset" data-preset="reset">Restore 100% Healthy DNA</button>
+      </div>
+
+      <div class="sandbox-editor">
+        <div class="sequence-box">
+          <label>Original Healthy DNA Recipe:</label>
+          <div class="seq-display" id="sandbox-orig-seq">ATG GTG CAC CTG ACT CCT GAG GAG AAG TCT GCC</div>
+        </div>
+        <div class="sequence-box">
+          <label>Mutated DNA Recipe with Typo:</label>
+          <div class="seq-display mutant-seq" id="sandbox-mut-seq">ATG GTG CAC CTG ACT CCT GTG GAG AAG TCT GCC</div>
+        </div>
+        <div class="sequence-box">
+          <label>Resulting Protein Chain:</label>
+          <div class="peptide-display" id="sandbox-peptide">Met - Val - His - Leu - Thr - Pro - [Val] - Glu - Lys - Ser - Ala</div>
+        </div>
+      </div>
+
+      <div class="sandbox-impact-callout" id="sandbox-impact">
+        <strong>What Happened:</strong> Just one letter swapped (A changed to T). This swapped a smooth building block (Glutamic Acid) for a sticky building block (Valine), causing red blood cells to deform into sickles!
+      </div>
+    </div>
+  </div>
+
+  <!-- Help & Tour Modal -->
+  <div class="help-modal hidden" id="help-modal">
+    <div class="help-modal-content glass-panel">
+      <div class="modal-header">
+        <div class="modal-title-wrap">
+          <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="12" cy="12" r="10"></circle>
+            <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"></path>
+            <line x1="12" y1="17" x2="12.01" y2="17"></line>
+          </svg>
+          <h3>VisionX Medical Virtual Laboratory Guide</h3>
+        </div>
+        <button class="close-btn" id="btn-close-help">&times;</button>
+      </div>
+      <div class="help-body">
+        <h4>Navigation Between Biological Scales</h4>
+        <p>1. <strong>Scale 0 (Human Body):</strong> Rotate, zoom, and select any of the 8 major organs (Brain, Heart, Lungs, Liver, Kidneys, Stomach, Intestines, Pancreas) or cellular genome.</p>
+        <p>2. <strong>Scale 1 (Organ Diagram):</strong> View animated functional diagrams showing internal tissues, neuronal networks, bronchial airways, and capillary beds.</p>
+        <p>3. <strong>Scale 2 (Cell / Tissue):</strong> Travel into the cellular membrane, nuclear pores, and unfurling chromatin fibers.</p>
+        <p>4. <strong>Scale 3 (Chromosomes):</strong> Explore the 23 human chromosome pairs and inspect chromosomal conditions like Trisomy 21.</p>
+        <p>5. <strong>Scale 4 (DNA Helix):</strong> Inspect nucleotide base pairs (A-T, G-C), unzip strands, transcribe mRNA codons, and locate point mutations.</p>
+        <p>6. <strong>Scale 5 (Treatment &amp; Cure):</strong> Administer precision CRISPR-Cas9 molecular scissors to repair typos and witness physiological cell recovery!</p>
+        <h4 style="margin-top: 14px;">WebXR Virtual Reality Controls</h4>
+        <p>&bull; <strong>Laser Pointer:</strong> Aim controller at floating 3D panels, organ hotspots, or DNA rungs.</p>
+        <p>&bull; <strong>Trigger Pull:</strong> Select scale, toggle organs, or deploy the CRISPR cure with haptic feedback.</p>
+        <p>&bull; <strong>Grip Squeeze:</strong> Hold grip to grab and rotate the 3D model directly in virtual space.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Interactive 3D Cursor Hover Tooltip -->
+  <div class="hud-tooltip hidden" id="hud-tooltip">
+    <div class="tooltip-title" id="tooltip-base-title">Adenine (A)</div>
+    <div class="tooltip-sub" id="tooltip-base-sub">Pairs with Thymine (T)</div>
+  </div>
+
+  <!-- VR Controller Instruction HUD -->
+  <div class="vr-hud-notice hidden" id="vr-hud-notice">
+    VR Active (6DoF) &bull; Point laser at 3D floating panels or organ nodes to explore and cure
+  </div>
+
+  <!-- Floating Holographic Organ & Pathology Information Panel -->
+  <div class="organ-popup-overlay hidden" id="organ-popup-overlay">
+    <div class="organ-popup-card glass-panel">
+      <div class="organ-popup-header">
+        <div class="organ-popup-title-wrap">
+          <span class="organ-popup-icon" id="organ-popup-icon">🧠</span>
+          <div>
+            <span class="organ-popup-tag" id="organ-popup-part">System: Nervous System</span>
+            <h3 id="organ-popup-disease-title">Brain &amp; Central Nervous System</h3>
+          </div>
+        </div>
+        <button class="close-btn" id="btn-close-organ-popup">&times;</button>
+      </div>
+
+      <div class="organ-popup-body">
+        <div class="organ-popup-section">
+          <strong>Physiological Function:</strong>
+          <p id="organ-popup-function-text">Processes sensory signals, controls motor coordination, regulates emotion, memory, and executive reasoning.</p>
+        </div>
+
+        <div class="organ-popup-section">
+          <strong>Biological Facts:</strong>
+          <p id="organ-popup-facts-text">Contains approximately 86 billion neurons, consuming 20% of total body oxygen and glucose despite being 2% of body mass.</p>
+        </div>
+
+        <div class="organ-popup-problem">
+          <strong id="organ-popup-disease-label">Related Condition / Pathology:</strong>
+          <p id="organ-popup-problem-text">DNA letters repeat "CAG" over 40 times, forming toxic protein clumps that damage brain cells controlling movement and memory.</p>
+        </div>
+
+        <div class="organ-popup-cure-preview">
+          <span class="cure-pill-badge">Precision Medicine Intervention</span>
+          <h4 id="organ-popup-cure-name">Genetic Message Shredder (ASO Gene Therapy)</h4>
+          <p id="organ-popup-cure-desc">Microscopic genetic shredders find the repeating stutter in the spinal fluid and shred it before it can form brain-damaging clumps.</p>
+        </div>
+      </div>
+
+      <div class="organ-popup-actions">
+        <button class="btn-play-cure-anim" id="btn-popup-launch-cure">
+          <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor">
+            <polygon points="5 3 19 12 5 21 5 3"></polygon>
+          </svg>
+          <span id="popup-action-btn-text">PLAY DISEASE &amp; CURE SIMULATION</span>
+        </button>
+        <button class="btn-secondary" id="btn-popup-zoom-organ">
+          <span>Zoom In 3D</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Application Logic Modules -->
+  <script type="module" src="js/main.js"></script>
+</body>
+</html>
